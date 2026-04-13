@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Rover Control</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg-dark: #07090e;
+      --panel-bg: rgba(15, 23, 42, 0.6);
+      --panel-border: rgba(6, 182, 212, 0.2);
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --accent-green: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.15), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.15), transparent 25%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+
+    @media(min-width: 900px) {
+      .container {
+        grid-template-columns: 350px 1fr;
+      }
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(to right, var(--accent-cyan), var(--accent-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      margin-bottom: 2rem;
+      text-align: center;
+      grid-column: 1 / -1;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Glassmorphism Panel Base */
+    .glass-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    /* Sidebar Layout */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .status-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .status-card .indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-red);
+      box-shadow: 0 0 10px var(--accent-red);
+      transition: all 0.3s;
+    }
+
+    .status-card.connected .status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 15px var(--accent-green);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: white;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #334155;
+    }
+
+    /* Calibration System (Sidebar) */
+    .calibration-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .calib-group {
+      background: rgba(0,0,0,0.2);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .calib-group h4 {
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .calib-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .adjust-group {
+      display: flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 8px;
+      border: 1px solid rgba(6,182,212,0.2);
+      overflow: hidden;
+    }
+
+    .adj-btn {
+      background: transparent;
+      color: var(--accent-cyan);
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .adj-btn:hover {
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .adj-btn:active {
+      background: var(--accent-cyan);
+      color: var(--bg-dark);
+    }
+
+    .time-input {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .time-input:focus {
+      outline: none;
+    }
+
+    .test-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-test {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-test:hover {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+
+    .sys-log {
+      margin-top: 10px;
+      background: rgba(0,0,0,0.4);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      height: 120px;
+      overflow-y: auto;
+    }
+
+    .sys-log p {
+      margin-bottom: 4px;
+      border-left: 2px solid var(--accent-blue);
+      padding-left: 6px;
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: rgba(0,0,0,0.2);
+      padding: 6px;
+      border-radius: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .tab-btn:not(:disabled):hover {
+      color: var(--text-main);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .tab-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* D-PAD Control */
+    .d-pad-container {
+      display: flex;
+      justify-content: center;
+      margin: 40px 0;
+    }
+
+    .d-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      grid-template-rows: repeat(3, 80px);
+      gap: 12px;
+    }
+
+    .d-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 16px;
+      color: var(--accent-cyan);
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .d-btn:hover {
+      background: rgba(6, 182, 212, 0.1);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.3), inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .d-btn:active, .d-btn.pressed {
+      background: var(--accent-cyan);
+      color: var(--bg-dark);
+      transform: scale(0.92);
+      box-shadow: 0 0 20px var(--accent-cyan);
+    }
+
+    .d-btn.stop {
+      grid-column: 2;
+      grid-row: 2;
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    .d-btn.stop:hover {
+      background: rgba(239, 68, 68, 0.1);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .d-btn.stop:active, .d-btn.stop.pressed {
+      background: var(--accent-red);
+      color: white;
+      box-shadow: 0 0 20px var(--accent-red);
+    }
+
+    /* Terminal & Path Log */
+    .terminal-box {
+      margin-top: 20px;
+    }
+
+    .terminal-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .terminal-input-group input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+    }
+
+    .terminal-input-group input:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(6,182,212,0.2);
+    }
+
+    .unified-stack {
+      background: rgba(0,0,0,0.3);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border-left: 3px solid var(--accent-green);
+    }
+
+    .unified-stack h4 {
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .path-log {
+      color: var(--accent-green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .action-row .btn-secondary {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .action-row .btn-secondary:hover:not(:disabled) {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .action-row .btn-secondary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--text-muted);
+      color: var(--text-muted);
+    }
+
+    /* Voice Mode */
+    .voice-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+    }
+
+    .mic-btn {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 2px solid var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: var(--accent-cyan);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .mic-btn::before {
+      content: '';
+      position: absolute;
+      top: -10px; left: -10px; right: -10px; bottom: -10px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-cyan);
+      opacity: 0;
+      animation: none;
+    }
+
+    .mic-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(6,182,212,0.3);
+    }
+
+    .mic-btn.listening {
+      background: var(--accent-red);
+      border-color: #f87171;
+      color: white;
+      box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+      transform: scale(1.1);
+    }
+
+    .mic-btn.listening::before {
+      border-color: var(--accent-red);
+      animation: ripple 1.5s infinite ease-out;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.3); opacity: 0; }
+    }
+
+    .voice-status {
+      margin-top: 30px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+      min-height: 1.5em;
+      color: var(--accent-cyan);
+    }
+
+    .voice-instructions {
+      margin-top: 25px;
+      background: rgba(0,0,0,0.2);
+      padding: 16px;
+      border-radius: 12px;
+      width: 100%;
+    }
+    .voice-instructions p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .voice-instructions strong { color: var(--accent-cyan); }
+
+    .error-msg {
+      color: var(--accent-red);
+      background: rgba(239,68,68,0.1);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Smart Rover Control</h1>
+
+    <!-- Sidebar Layout -->
+    <div class="sidebar">
+      <div class="glass-panel">
+        <div class="status-card" id="statusCard">
+          <div class="indicator">
+            <div class="status-dot"></div>
+            <span id="statusText">Disconnected</span>
+          </div>
+          <button class="btn-primary" id="connectBtn" onclick="connectToServer()">Connect</button>
+        </div>
+
+        <div class="error-msg" id="globalError" style="margin-top:15px;"></div>
+        
+        <div class="sys-log" id="mainLog">
+          <p>System initialized. Waiting for connection...</p>
+        </div>
+      </div>
+
+      <!-- Settings / Calibration Region (Global) -->
+      <div class="glass-panel calibration-section">
+        <h3>Time Calibration</h3>
+        
+        <div class="calib-group">
+          <h4>Turn Rotation Time (ms)</h4>
+          <div class="calib-controls">
+            <div class="adjust-group">
+              <button class="adj-btn" onmousedown="startAdjust('turn', -1)" onmouseup="stopAdjust()" onmouseleave="stopAdjust()" ontouchstart="startAdjust('turn', -1)" ontouchend="stopAdjust()">-</button>
+              <input id="turnTimeDisplay" class="time-input" type="number" min="0" step="1" value="850">
+              <button class="adj-btn" onmousedown="startAdjust('turn', 1)" onmouseup="stopAdjust()" onmouseleave="stopAdjust()" ontouchstart="startAdjust('turn', 1)" ontouchend="stopAdjust()">+</button>
+            </div>
+            <div class="test-actions">
+              <button class="btn-test" onclick="testMove('L')">Test L</button>
+              <button class="btn-test" onclick="testMove('R')">Test R</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="calib-group">
+          <h4>Forward/Backward Thrust (ms)</h4>
+          <div class="calib-controls">
+            <div class="adjust-group">
+              <button class="adj-btn" onmousedown="startAdjust('fwd', -1)" onmouseup="stopAdjust()" onmouseleave="stopAdjust()" ontouchstart="startAdjust('fwd', -1)" ontouchend="stopAdjust()">-</button>
+              <input id="fwdTimeDisplay" class="time-input" type="number" min="0" step="1" value="1000">
+              <button class="adj-btn" onmousedown="startAdjust('fwd', 1)" onmouseup="stopAdjust()" onmouseleave="stopAdjust()" ontouchstart="startAdjust('fwd', 1)" ontouchend="stopAdjust()">+</button>
+            </div>
+            <div class="test-actions">
+              <button class="btn-test" onclick="testMove('F')">Test FWD</button>
+              <button class="btn-test" onclick="testMove('B')">Test REV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="glass-panel">
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchMode('manual')" id="tab-manual">Manual</button>
+        <button class="tab-btn" onclick="switchMode('terminal')" id="tab-terminal" disabled>Terminal</button>
+        <button class="tab-btn" onclick="switchMode('voice')" id="tab-voice" disabled>Voice</button>
+      </div>
+
+      <!-- Manual Mode -->
+      <div class="tab-content active" id="mode-manual">
+        <div class="d-pad-container">
+          <div class="d-pad">
+            <div></div>
+            <button class="d-btn" id="btn-f" onmousedown="startMove('F')" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove('F')" ontouchend="stopMove()">↑</button>
+            <div></div>
+            <button class="d-btn" id="btn-l" onmousedown="startMove('L')" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove('L')" ontouchend="stopMove()">←</button>
+            <button class="d-btn stop" id="btn-s" onclick="sendCommand('S')">■</button>
+            <button class="d-btn" id="btn-r" onmousedown="startMove('R')" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove('R')" ontouchend="stopMove()">→</button>
+            <div></div>
+            <button class="d-btn" id="btn-b" onmousedown="startMove('B')" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove('B')" ontouchend="stopMove()">↓</button>
+            <div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal Mode -->
+      <div class="tab-content" id="mode-terminal">
+        <div class="terminal-box">
+          <div class="terminal-input-group">
+            <input type="text" id="terminalInput" placeholder="> Enter command (e.g. 2F 1R, U, D)">
+            <button class="btn-primary" onclick="sendTerminalCommand()">EXECUTE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice Mode -->
+      <div class="tab-content" id="mode-voice">
+        <div class="voice-wrapper">
+          <button class="mic-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+          <div class="voice-status" id="voiceText">Tap to Transmit</div>
+          
+          <div class="voice-instructions">
+            <h4>Voice Commands:</h4>
+            <p><strong>Move Forward:</strong> "go forward", "ahead", "forward"</p>
+            <p><strong>Move Backward:</strong> "go back", "reverse", "backward"</p>
+            <p><strong>Turn:</strong> "turn left", "turn right"</p>
+            <p><strong>Stop:</strong> "stop", "halt"</p>
+            <p><strong>Return Modes:</strong> "return" (exact pathway), "shortest" (direct calc)</p>
+            <p><strong>Clear Stack:</strong> "clear", "reset"</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unified Stack (Always visible in Main Panel at the bottom) -->
+      <div class="terminal-box unified-stack">
+        <h4>Unified Path Stack</h4>
+        <div class="path-log" id="pathLog">
+          No movements recorded.
+        </div>
+      </div>
+
+      <!-- Return Action Buttons -->
+      <div class="action-row">
+        <button class="btn-secondary" onclick="executeExactReturn()" id="btn-exact-return" disabled>Exact Return (U)</button>
+        <button class="btn-secondary" onclick="executeShortestReturn()" id="btn-shortest-return" disabled>Shortest Calc (D)</button>
+        <button class="btn-secondary" onclick="clearPath()" id="btn-clear-path">Wipe Memory (C)</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    const SERVER_URL = 'http://localhost:5000';
+    let isConnected = false;
+    let currentMode = 'manual';
+    let continuousMode = false;
+    let turnTime = 850;
+    let fwdTime = 1000;
+    
+    // Unified Stack History Array fetched from backend
+    let pathHistory = [];
+    
+    let activeContinuousCommand = null;
+    let activeContinuousStartedAt = null;
+    let pendingStopTimeout = null;
+
+    let adjustInterval = null;
+    let calibDebounceTimer = null;
+
+    const pressedKeys = new Set();
+    
+    // --- Voice State ---
+    let voiceRecognition = null;
+    let isListening = false;
+
+    // --- Logging ---
+    function log(msg) {
+      const logDiv = document.getElementById('mainLog');
+      const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+      logDiv.innerHTML += `<p>[${ts}] ${msg}</p>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function showError(msg) {
+      const errBox = document.getElementById('globalError');
+      if (msg) {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+      } else {
+        errBox.style.display = 'none';
+      }
+    }
+
+    // --- Base Network ---
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, options);
+      let data = {};
+      try { data = await response.json(); } catch(e){}
+      
+      if (data && typeof data.connected === 'boolean') {
+        syncState(data);
+      }
+
+      if (!response.ok || data.status === 'error') {
+        throw new Error(data.message || `HTTP ${response.status}`);
+      }
+      return data;
+    }
+
+    function syncState(data) {
+      if (!data) return;
+
+      // Ensure global connection status matches
+      if (typeof data.connected === 'boolean') {
+        isConnected = data.connected;
+        const statusCard = document.getElementById('statusCard');
+        const statusText = document.getElementById('statusText');
+        const connectBtn = document.getElementById('connectBtn');
+        
+        if (isConnected) {
+          statusCard.classList.add('connected');
+          statusText.textContent = 'Connected';
+          connectBtn.textContent = 'Active';
+          connectBtn.disabled = true;
+          document.getElementById('tab-terminal').disabled = false;
+          document.getElementById('tab-voice').disabled = false;
+        } else {
+          statusCard.classList.remove('connected');
+          statusText.textContent = 'Disconnected';
+          connectBtn.textContent = 'Connect';
+          connectBtn.disabled = false;
+          // You might not want to instantly disable tabs, but UI should reflect loss of link.
+        }
+      }
+
+      if (typeof data.turn_time === 'number') {
+        turnTime = Math.round(data.turn_time * 1000);
+        document.getElementById('turnTimeDisplay').value = turnTime;
+      }
+      if (typeof data.fwd_time === 'number') {
+        fwdTime = Math.round(data.fwd_time * 1000);
+        document.getElementById('fwdTimeDisplay').value = fwdTime;
+      }
+      if (typeof data.continuous_mode === 'boolean') {
+        continuousMode = data.continuous_mode;
+      }
+      
+      // Auto-update unified stack history length validation dynamically
+      if (Array.isArray(data.command_log)) {
+        pathHistory = data.command_log;
+        renderPathLog();
+      }
+    }
+
+    // --- Connection ---
+    async function connectToServer() {
+      try {
+        const data = await fetchJson(SERVER_URL + '/connect', { method: 'POST' });
+        isConnected = true;
+        syncState(data);
+        
+        document.getElementById('statusCard').classList.add('connected');
+        document.getElementById('statusText').textContent = 'Connected';
+        const connectBtn = document.getElementById('connectBtn');
+        connectBtn.textContent = 'Active';
+        connectBtn.disabled = true;
+
+        document.getElementById('tab-terminal').disabled = false;
+        document.getElementById('tab-voice').disabled = false;
+        
+        showError('');
+        log('Link established with Rover backend.');
+      } catch (err) {
+        log('Connection failure: ' + err.message);
+        showError(err.message || 'Cannot connect to Server/HC-05');
+      }
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + mode).classList.add('active');
+      document.getElementById('mode-' + mode).classList.add('active');
+    }
+
+    // --- Core Controls ---
+    function getTimeFallback(cmd) {
+      return (cmd === 'L' || cmd === 'R') ? turnTime : fwdTime;
+    }
+
+    async function sendCommand(cmd) {
+      if (!isConnected) return;
+      if (cmd === 'S' && activeContinuousCommand) {
+        await stopMove();
+        return;
+      }
+      try {
+        await fetchJson(SERVER_URL + '/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: cmd })
+        });
+      } catch (err) { log('Cmd error: ' + err.message); }
+    }
+
+    async function sendMoveCommand(cmd, forceContinuous = continuousMode) {
+      if (!isConnected) return;
+      const durationMs = getTimeFallback(cmd);
+      
+      if (forceContinuous) {
+        activeContinuousCommand = cmd;
+        activeContinuousStartedAt = performance.now();
+      }
+
+      try {
+        const data = await fetchJson(SERVER_URL + '/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: cmd, duration: durationMs / 1000, continuous: forceContinuous })
+        });
+        syncState(data);
+      } catch (err) {
+        log('Move failed: ' + err.message);
+        if (forceContinuous) {
+          activeContinuousCommand = null;
+          activeContinuousStartedAt = null;
+        }
+      }
+    }
+
+    async function stopMove(expectedCmd = null) {
+      if (!activeContinuousCommand) return;
+      if (expectedCmd && activeContinuousCommand !== expectedCmd) return;
+      
+      const cmd = activeContinuousCommand;
+      const elapsed = Math.max(performance.now() - activeContinuousStartedAt, 0);
+      const fallbackMs = getTimeFallback(cmd);
+      
+      activeContinuousCommand = null;
+      activeContinuousStartedAt = null;
+
+      if (elapsed < 300) {
+        const remainingMs = Math.max(0, fallbackMs - elapsed);
+        pendingStopTimeout = setTimeout(async () => {
+          pendingStopTimeout = null;
+          try {
+            const data = await fetchJson(SERVER_URL + '/stop', { method: 'POST' });
+            syncState(data);
+          } catch (err) { log('Stop failed: ' + err.message); }
+        }, remainingMs);
+        return;
+      }
+
+      try {
+        const data = await fetchJson(SERVER_URL + '/stop', { method: 'POST' });
+        syncState(data);
+      } catch (err) { log('Stop failed: ' + err.message); }
+    }
+
+    async function startMove(cmd, forceContinuous = true) {
+      if (!isConnected) return;
+      
+      if (pendingStopTimeout) {
+        clearTimeout(pendingStopTimeout);
+        pendingStopTimeout = null;
+      }
+      
+      if (activeContinuousCommand === cmd) return;
+      if (activeContinuousCommand) await stopMove();
+      
+      await sendMoveCommand(cmd, true);
+    }
+
+    // --- Unified Stack & Logging ---
+    function renderPathLog() {
+      const logDiv = document.getElementById('pathLog');
+      const exactBtn = document.getElementById('btn-exact-return');
+      const shortestBtn = document.getElementById('btn-shortest-return');
+
+      if (pathHistory.length === 0) {
+        logDiv.innerHTML = 'Stack empty. No coordinates assigned.';
+        exactBtn.disabled = true;
+        shortestBtn.disabled = true;
+        return;
+      }
+      
+      exactBtn.disabled = false;
+      shortestBtn.disabled = false;
+
+      // Slice out the last 15 sequences visually so it fits
+      const recentStr = pathHistory.slice(-15).map(m => `<span style="color:#fff">${m.cmd}</span>(${(m.ms/1000).toFixed(1)}s)`).join(' → ');
+      logDiv.innerHTML = `<div><strong>Sequence Count:</strong> ${pathHistory.length} tracked maneuvers</div><div style="margin-top:8px">${recentStr}</div>`;
+    }
+
+    // --- Terminal Sequence Logic ---
+    function parseSequenceLocal(seq) {
+      const moves = [];
+      const normalized = seq.toUpperCase().replace(/[^A-Z0-9]+/g, '');
+      for (const match of normalized.matchAll(/(\d*)([FBLRUDSC])/g)) {
+        const count = match[1] ? parseInt(match[1], 10) : 1;
+        for (let index = 0; index < Math.max(count, 1); index += 1) {
+          moves.push(match[2]);
+        }
+      }
+      return moves;
+    }
+
+    async function sendTerminalCommand() {
+      const input = document.getElementById('terminalInput');
+      const cmdRaw = input.value.trim().toUpperCase();
+      if (!cmdRaw) return;
+
+      const cmd = cmdRaw.replace(/[^A-Z0-9 ]/g, ''); // strip weird chars but keep spaces for phrases
+
+      if (cmd === 'U' || cmd.includes('EXACT') || (cmd.includes('RETURN') && !cmd.includes('SHORTEST'))) await executeExactReturn();
+      else if (cmd === 'D' || cmd.includes('SHORT') || cmd.includes('DIRECT')) await executeShortestReturn();
+      else if (cmd === 'C' || cmd.includes('CLEAR') || cmd.includes('WIPE') || cmd.includes('RESET')) await clearPath();
+      else if (cmd === 'S' || cmd === 'STOP' || cmd === 'HALT') await sendCommand('S');
+      else if (['F','B','L','R'].includes(cmd)) await sendMoveCommand(cmd, false);
+      else {
+        const moves = parseSequenceLocal(cmd);
+        if (moves.length > 0) {
+          if (!isConnected) { showError('Not connected'); return; }
+          try {
+            const data = await fetchJson(SERVER_URL + '/sequence', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sequence: cmd })
+            });
+            syncState(data);
+            log(`Sequence Executed.`);
+          } catch(err) { log('Seq execution error: ' + err.message); }
+        } else {
+          showError('Invalid sequence syntax.');
+        }
+      }
+      
+      input.value = '';
+    }
+
+    document.getElementById('terminalInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendTerminalCommand();
+    });
+
+    async function executeExactReturn() {
+      if (!isConnected) return;
+      log('Executing Absolute Coordinate Return...');
+      try {
+        const data = await fetchJson(SERVER_URL + '/return/exact', { method: 'POST' });
+        syncState(data);
+        log(data.message || 'Coordinate exact return verified.');
+      } catch (err) { log('Return pathing error: ' + err.message); }
+    }
+
+    async function executeShortestReturn() {
+      if (!isConnected) return;
+      log('Calculating Direct Coordinate Trajectory...');
+      try {
+        const data = await fetchJson(SERVER_URL + '/return/shortest', { method: 'POST' });
+        syncState(data);
+        log(data.message || 'Shortest calculation return complete.');
+      } catch (err) { log('Trajectory error: ' + err.message); }
+    }
+
+    async function clearPath() {
+      if (!isConnected) return;
+      if (activeContinuousCommand) await stopMove();
+      try {
+        const data = await fetchJson(SERVER_URL + '/clear', { method: 'POST' });
+        syncState(data);
+        pressedKeys.clear();
+        log('Sequence and Coordinate stack wiped.');
+      } catch (err) { log('Clear failed: ' + err.message); }
+    }
+
+    // --- Voice Mode ---
+    function toggleVoice() {
+      if (!voiceRecognition) {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          showError('Voice recognition requires Chrome on localhost.');
+          return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        voiceRecognition = new SpeechRecognition();
+        voiceRecognition.continuous = false;
+        voiceRecognition.interimResults = false; 
+        voiceRecognition.lang = 'en-US';
+        
+        voiceRecognition.onstart = () => {
+          isListening = true;
+          updateVoiceUI();
+        };
+
+        voiceRecognition.onresult = async (event) => {
+          const transcript = event.results[0][0].transcript.toLowerCase();
+          log(`Voice input: "${transcript}"`);
+          
+          let cmd = null;
+          if (transcript.includes('clear') || transcript.includes('reset')) cmd = 'C';
+          else if (transcript.includes('direct') || transcript.includes('short')) cmd = 'D';
+          else if (transcript.includes('return') || transcript.includes('start')) cmd = 'U';
+          else if (transcript.includes('stop') || transcript.includes('halt')) cmd = 'S';
+          else if (transcript.includes('left')) cmd = 'L';
+          else if (transcript.includes('right')) cmd = 'R';
+          else if (transcript.includes('back') || transcript.includes('reverse')) cmd = 'B';
+          else if (transcript.includes('forward') || transcript.includes('ahead') || transcript.includes('go')) cmd = 'F';
+
+          if (cmd) {
+            document.getElementById('voiceText').textContent = `Transmitting [${cmd}]...`;
+            if (['U','D','C'].includes(cmd)) {
+              if (cmd === 'U') await executeExactReturn();
+              if (cmd === 'D') await executeShortestReturn();
+              if (cmd === 'C') await clearPath();
+            } else if (cmd === 'S') {
+              await sendCommand('S');
+            } else {
+              await sendMoveCommand(cmd, false);
+            }
+          } else {
+            document.getElementById('voiceText').textContent = "Command unreadable";
+          }
+        };
+
+        voiceRecognition.onerror = (event) => {
+          log('Voice API Error: ' + event.error);
+          document.getElementById('voiceText').textContent = `API Error: ${event.error}`;
+        };
+
+        voiceRecognition.onend = () => {
+          isListening = false;
+          updateVoiceUI();
+        };
+      }
+
+      if (isListening) {
+        voiceRecognition.stop();
+      } else {
+        try {
+          showError('');
+          document.getElementById('voiceText').textContent = "Connecting Mic...";
+          voiceRecognition.start();
+        } catch (e) {
+          showError('Microphone restricted: ' + e.message);
+        }
+      }
+    }
+
+    function updateVoiceUI() {
+      const btn = document.getElementById('voiceBtn');
+      const text = document.getElementById('voiceText');
+      if (isListening) {
+        btn.classList.add('listening');
+        text.textContent = 'Listening (Speak Now)';
+      } else {
+        btn.classList.remove('listening');
+        if (!text.textContent.includes("Transmitting") && !text.textContent.includes("unreadable")) {
+          text.textContent = 'Tap to Transmit';
+        } else {
+          setTimeout(() => { if (!isListening) text.textContent = 'Tap to Transmit'; }, 1800);
+        }
+      }
+    }
+
+    // --- Calibration Syncing (Debounced) ---
+    function startAdjust(target, dir) {
+      stopAdjust();
+      applyAdjustment(target, dir);
+      adjustInterval = setInterval(() => applyAdjustment(target, dir * 4), 60);
+    }
+
+    function stopAdjust() {
+      if (adjustInterval) {
+        clearInterval(adjustInterval);
+        adjustInterval = null;
+      }
+    }
+
+    function applyAdjustment(target, delta) {
+      if (target === 'turn') {
+        turnTime = Math.max(0, turnTime + delta);
+        document.getElementById('turnTimeDisplay').value = turnTime;
+      } else {
+        fwdTime = Math.max(0, fwdTime + delta);
+        document.getElementById('fwdTimeDisplay').value = fwdTime;
+      }
+      debouncedCalibrationSync();
+    }
+
+    function debouncedCalibrationSync() {
+      if (calibDebounceTimer) clearTimeout(calibDebounceTimer);
+      calibDebounceTimer = setTimeout(async () => {
+        if (!isConnected) return;
+        
+        turnTime = Math.max(0, parseInt(document.getElementById('turnTimeDisplay').value) || turnTime);
+        fwdTime = Math.max(0, parseInt(document.getElementById('fwdTimeDisplay').value) || fwdTime);
+        
+        try {
+          await fetchJson(SERVER_URL + '/calibrate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              turn_time: turnTime / 1000,
+              fwd_time: fwdTime / 1000,
+              continuous_mode: continuousMode
+            })
+          });
+        } catch (err) { log('Sync failed'); }
+      }, 300);
+    }
+
+    document.getElementById('turnTimeDisplay').addEventListener('input', debouncedCalibrationSync);
+    document.getElementById('fwdTimeDisplay').addEventListener('input', debouncedCalibrationSync);
+
+    // --- Testing ---
+    async function testMove(cmd) {
+      if (!isConnected) { showError('Not connected'); return; }
+      const durationMs = cmd === 'L' || cmd === 'R' ? turnTime : fwdTime;
+      log(`Calibration Drive [${cmd}] ${durationMs}ms`);
+      try {
+        await fetchJson(SERVER_URL + '/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ direction: cmd, duration: durationMs / 1000 })
+        });
+      } catch (err) { log('Drive test blocked: ' + err.message); }
+    }
+
+    // --- Keyboard Bindings ---
+    document.addEventListener('keydown', async (e) => {
+      if (!isConnected || currentMode !== 'manual') return;
+      if (document.activeElement.tagName === 'INPUT') return;
+      
+      const keyMap = { 'ArrowUp':'F', 'w':'F', 'W':'F', 'ArrowDown':'B', 's':'B', 'S':'B', 'ArrowLeft':'L', 'a':'L', 'A':'L', 'ArrowRight':'R', 'd':'R', 'D':'R', ' ':'S' };
+      const cmd = keyMap[e.key];
+      
+      if (cmd && !pressedKeys.has(e.key) && !e.repeat) {
+        pressedKeys.add(e.key);
+        e.preventDefault();
+        
+        const btn = document.getElementById('btn-' + cmd.toLowerCase());
+        if (btn) btn.classList.add('pressed');
+        
+        if (cmd === 'S') sendCommand('S');
+        else startMove(cmd, true);
+      }
+    });
+
+    document.addEventListener('keyup', async (e) => {
+      if (!isConnected || currentMode !== 'manual') return;
+      if (document.activeElement.tagName === 'INPUT') return;
+      
+      const keyMap = { 'ArrowUp':'F', 'w':'F', 'W':'F', 'ArrowDown':'B', 's':'B', 'S':'B', 'ArrowLeft':'L', 'a':'L', 'A':'L', 'ArrowRight':'R', 'd':'R', 'D':'R', ' ':'S' };
+      const cmd = keyMap[e.key];
+      
+      if (cmd) {
+        pressedKeys.delete(e.key);
+        if (cmd !== 'S') {
+          e.preventDefault();
+          const btn = document.getElementById('btn-' + cmd.toLowerCase());
+          if (btn) btn.classList.remove('pressed');
+          stopMove(cmd);
+        }
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      pressedKeys.clear();
+      stopAdjust();
+      stopMove();
+    });
+
+  </script>
+</body>
+</html>

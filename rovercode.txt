@@ -1,0 +1,188 @@
+#include <Servo.h>
+#include <SoftwareSerial.h>
+
+#define ENA 5
+#define IN1 7
+#define IN2 8
+#define IN3 9
+#define IN4 10
+#define ENB 6
+
+#define TRIG A0
+#define ECHO A1
+#define SERVO_PIN 11
+#define MODE_PIN A3
+
+SoftwareSerial bluetooth(2,3);
+Servo servo;
+
+int motorSpeed = 240;
+int btTurnTime = 840;
+int autoThreshold = 8;
+int autoReverse = 300;
+
+char cmdBuffer[2];
+bool lastModeWasAuto=false;
+
+void setMotors(int i1,int i2,int i3,int i4){
+digitalWrite(IN1,i1);
+digitalWrite(IN2,i2);
+digitalWrite(IN3,i3);
+digitalWrite(IN4,i4);
+}
+
+void forward(){setMotors(HIGH,LOW,HIGH,LOW);}
+void backward(){setMotors(LOW,HIGH,LOW,HIGH);}
+void turnLeft(){setMotors(LOW,HIGH,HIGH,LOW);}
+void turnRight(){setMotors(HIGH,LOW,LOW,HIGH);}
+void stopMotor(){setMotors(LOW,LOW,LOW,LOW);}
+
+void setSpeed(int spd){
+motorSpeed=constrain(spd,0,255);
+analogWrite(ENA,motorSpeed);
+analogWrite(ENB,motorSpeed);
+}
+
+int getDistance(){
+
+digitalWrite(TRIG,LOW);
+delayMicroseconds(2);
+
+digitalWrite(TRIG,HIGH);
+delayMicroseconds(10);
+
+digitalWrite(TRIG,LOW);
+
+long dur=pulseIn(ECHO,HIGH,25000UL);
+
+if(dur==0)return 999;
+
+int cm=(int)(dur/29/2);
+
+return(cm==0)?999:cm;
+}
+
+void processCommand(char c){
+
+switch(c){
+
+case 'F':
+forward();
+break;
+
+case 'B':
+backward();
+break;
+
+case 'L':
+turnLeft();
+break;
+
+case 'R':
+turnRight();
+break;
+
+case 'S':
+stopMotor();
+break;
+
+}
+
+}
+
+void autoObstacleMode(){
+
+if(getDistance()>autoThreshold){
+forward();
+return;
+}
+
+stopMotor();
+
+backward();
+delay(autoReverse);
+
+stopMotor();
+
+servo.write(180);
+delay(300);
+int leftDist=getDistance();
+
+servo.write(0);
+delay(300);
+int rightDist=getDistance();
+
+servo.write(90);
+delay(200);
+
+if(leftDist>rightDist) turnLeft();
+else turnRight();
+
+delay(btTurnTime);
+
+stopMotor();
+delay(200);
+}
+
+void setup(){
+
+Serial.begin(9600);
+bluetooth.begin(9600);
+
+pinMode(IN1,OUTPUT);
+pinMode(IN2,OUTPUT);
+pinMode(IN3,OUTPUT);
+pinMode(IN4,OUTPUT);
+
+pinMode(ENA,OUTPUT);
+pinMode(ENB,OUTPUT);
+
+setSpeed(motorSpeed);
+
+pinMode(TRIG,OUTPUT);
+pinMode(ECHO,INPUT);
+
+pinMode(MODE_PIN,INPUT_PULLUP);
+
+servo.attach(SERVO_PIN);
+servo.write(90);
+
+delay(500);
+
+stopMotor();
+}
+
+void loop(){
+
+  bool modeIsAuto = (digitalRead(MODE_PIN)==HIGH);
+
+  if(!modeIsAuto && lastModeWasAuto){
+    // Switched from Auto to Bluetooth mode - detach servo to save power
+    servo.detach();
+    servo.write(90);
+    stopMotor();
+  }
+  else if(modeIsAuto && !lastModeWasAuto){
+    // Switched from Bluetooth to Auto mode - re-attach servo
+    servo.attach(SERVO_PIN);
+    servo.write(90);
+    delay(200);
+  }
+
+  lastModeWasAuto = modeIsAuto;
+
+  if(modeIsAuto){
+    while(bluetooth.available()) bluetooth.read();
+    autoObstacleMode();
+    return;
+  }
+
+  while(bluetooth.available()){
+
+    char ch = bluetooth.read();
+
+    processCommand(ch);
+
+  }
+
+}

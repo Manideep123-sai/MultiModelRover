@@ -1,0 +1,107 @@
+ARDUINO CONNECTIONS
+D2  → Bluetooth TXD
+D3  → Bluetooth RXD
+D5  → L298N IN1
+D7  → L298N IN2
+D8  → L298N IN3
+D9  → L298N IN4
+D10 → L298N ENA
+D6  → L298N ENB
+D11 → Servo signal
+A0  → Ultrasonic Trig
+A1  → Ultrasonic Echo
+A3  → Mode switch (other side of switch → GND)
+5V  → Servo VCC
+5V  → Ultrasonic VCC
+GND → Servo GND
+GND → Ultrasonic GND
+GND → Bluetooth GND
+GND → L298N GND
+BLUETOOTH MODULE
+TXD → Arduino D2
+RXD → Arduino D3
+VCC → 3.3V (or 5V depending module)
+GND → GND
+SERVO MOTOR
+Red    → 5V
+Brown  → GND
+Yellow → D11
+ULTRASONIC SENSOR (HC-SR04)
+VCC  → 5V / IOREF
+Trig → A0
+Echo → A1
+GND  → GND
+L298N MOTOR DRIVER
+IN1 → D7
+IN2 → D8
+IN3 → D9
+IN4 → D10
+ENA → D5
+ENB → D6
+OUT1 + OUT2 → Left motors
+OUT3 + OUT4 → Right motors
+12V → Switch → Battery +
+GND → Battery −
+MODE SWITCH
+One pin → A3
+Other pin → GND
+A3 OPEN → Auto obstacle mode
+A3 TO GND → Bluetooth mode
+BATTERY
+2 × 3.7V batteries (~7.4V)
+Battery + → Switch → L298N 12V
+Battery − → L298N GND
+correct the pins now then 
+ARDUINO CONNECTIONS
+D2  → Bluetooth TXD
+D3  → Bluetooth RXD
+D5  → L298N IN1
+D7  → L298N IN2
+D8  → L298N IN3
+D9  → L298N IN4
+D10 → L298N ENA
+D6  → L298N ENB
+D11 → Servo signal
+A0  → Ultrasonic Trig
+A1  → Ultrasonic Echo
+A3  → Mode switch (other side of switch → GND)
+5V  → Servo VCC
+5V  → Ultrasonic VCC
+GND → Servo GND
+GND → Ultrasonic GND
+GND → Bluetooth GND
+GND → L298N GND
+BLUETOOTH MODULE
+TXD → Arduino D2
+RXD → Arduino D3
+VCC → 3.3V (or 5V depending module)
+GND → GND
+SERVO MOTOR
+Red    → 5V
+Brown  → GND
+Yellow → D11
+ULTRASONIC SENSOR (HC-SR04)
+VCC  → 5V / IOREF
+Trig → A0
+Echo → A1
+GND  → GND
+L298N MOTOR DRIVER
+IN1 → D7 
+IN2 → D8
+IN3 → D9
+IN4 → D10 
+ENA → D5 
+ENB → D6 
+OUT1 + OUT2 → Left motors
+OUT3 + OUT4 → Right motors
+12V → Switch → Battery +
+GND → Battery −
+MODE SWITCH
+One pin → A3
+Other pin → GND
+A3 OPEN → Auto obstacle mode
+A3 TO GND → Bluetooth mode
+BATTERY
+2 × 3.7V batteries (~7.4V)
+Battery + → Switch → L298N 12V
+Battery − → L298N GND
